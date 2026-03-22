@@ -16,8 +16,10 @@ class Service(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("category.id"), nullable=False)
 
+    user = relationship("User", back_populates="services")
     category = relationship("Category", back_populates="services")
     transactions = relationship("Transaction", back_populates="service")

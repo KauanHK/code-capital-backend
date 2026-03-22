@@ -6,15 +6,21 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Client, Transaction
+from app.models import Client, Transaction, User
 from app.schemas.client import ClientCreate, ClientRead, ClientUpdate
+from app.security import get_current_user
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
 
 @router.post("", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
-def create_client(payload: ClientCreate, db: Session = Depends(get_db)) -> Client:
+def create_client(
+    payload: ClientCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Client:
     client = Client(
+        user_id=current_user.id,
         name=payload.name,
         cpf_cnpj=payload.cpf_cnpj,
         email=payload.email,
@@ -33,13 +39,19 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)) -> Clien
 
 
 @router.get("", response_model=list[ClientRead])
-def list_clients(db: Session = Depends(get_db)) -> list[Client]:
-    return db.scalars(select(Client).order_by(Client.created_at.desc())).all()
+def list_clients(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[Client]:
+    return db.scalars(
+        select(Client).where(Client.user_id == current_user.id).order_by(Client.created_at.desc())
+    ).all()
 
 
 @router.get("/{client_id}", response_model=ClientRead)
-def get_client(client_id: uuid.UUID, db: Session = Depends(get_db)) -> Client:
-    client = db.get(Client, client_id)
+def get_client(
+    client_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Client:
+    client = db.scalar(select(Client).where(Client.id == client_id, Client.user_id == current_user.id))
     if client is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
     return client
@@ -50,8 +62,9 @@ def update_client(
     client_id: uuid.UUID,
     payload: ClientUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Client:
-    client = db.get(Client, client_id)
+    client = db.scalar(select(Client).where(Client.id == client_id, Client.user_id == current_user.id))
     if client is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
@@ -72,12 +85,20 @@ def update_client(
 
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_client(client_id: uuid.UUID, db: Session = Depends(get_db)) -> Response:
-    client = db.get(Client, client_id)
+def delete_client(
+    client_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    client = db.scalar(select(Client).where(Client.id == client_id, Client.user_id == current_user.id))
     if client is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
-    has_transactions = db.scalar(select(Transaction.id).where(Transaction.client_id == client_id).limit(1))
+    has_transactions = db.scalar(
+        select(Transaction.id)
+        .where(Transaction.client_id == client_id, Transaction.user_id == current_user.id)
+        .limit(1)
+    )
     if has_transactions:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

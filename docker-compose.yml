@@ -33,31 +33,6 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
 
-  evolution:
-    image: evoapicloud/evolution-api:latest
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "8181:8181"
-    environment:
-      - SERVER_URL=http://evolution:8181
-      - PROVIDER=evolution
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/evolution_db?schema=evolution_api
-      - DATABASE_LOGGING=false
-      - CORS_ORIGIN_URL=*
-      - ENCRYPTION_KEY=${EVOLUTION_ENCRYPTION_KEY:-evol_secret_key_12345}
-      - API_KEY_ACCESS_CONTROL=${EVOLUTION_API_KEY:-sk_evolution_default_key}
-      - LOG_LEVEL=info
-    volumes:
-      - evolution_data:/app/store
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
     build: .
     restart: always

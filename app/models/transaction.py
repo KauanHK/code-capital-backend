@@ -23,6 +23,7 @@ class Transaction(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("client.id"), nullable=True)
     service_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("service.id"), nullable=False)
     is_expense: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -45,5 +46,6 @@ class Transaction(Base):
     transaction_date: Mapped[date] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
+    user = relationship("User", back_populates="transactions")
     client = relationship("Client", back_populates="transactions")
     service = relationship("Service", back_populates="transactions")

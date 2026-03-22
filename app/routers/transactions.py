@@ -7,28 +7,38 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Client, Service, Transaction
+from app.models import Client, Service, Transaction, User
 from app.schemas.transaction import TransactionCreate, TransactionRead, TransactionUpdate
+from app.security import get_current_user
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
-def _validate_references(db: Session, payload: TransactionCreate | TransactionUpdate) -> None:
-    service = db.get(Service, payload.service_id)
+def _validate_references(db: Session, payload: TransactionCreate | TransactionUpdate, current_user: User) -> None:
+    service = db.scalar(
+        select(Service).where(Service.id == payload.service_id, Service.user_id == current_user.id)
+    )
     if service is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
 
     if payload.client_id is not None:
-        client = db.get(Client, payload.client_id)
+        client = db.scalar(
+            select(Client).where(Client.id == payload.client_id, Client.user_id == current_user.id)
+        )
         if client is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
 
 @router.post("", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
-def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)) -> Transaction:
-    _validate_references(db, payload)
+def create_transaction(
+    payload: TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Transaction:
+    _validate_references(db, payload, current_user)
 
     transaction = Transaction(
+        user_id=current_user.id,
         client_id=payload.client_id,
         service_id=payload.service_id,
         is_expense=payload.is_expense,
@@ -61,8 +71,9 @@ def list_transactions(
     client_id: uuid.UUID | None = None,
     service_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[Transaction]:
-    query = select(Transaction)
+    query = select(Transaction).where(Transaction.user_id == current_user.id)
 
     if status_filter is not None:
         query = query.where(Transaction.status == status_filter)
@@ -81,8 +92,14 @@ def list_transactions(
 
 
 @router.get("/{transaction_id}", response_model=TransactionRead)
-def get_transaction(transaction_id: uuid.UUID, db: Session = Depends(get_db)) -> Transaction:
-    transaction = db.get(Transaction, transaction_id)
+def get_transaction(
+    transaction_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Transaction:
+    transaction = db.scalar(
+        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == current_user.id)
+    )
     if transaction is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     return transaction
@@ -93,12 +110,15 @@ def update_transaction(
     transaction_id: uuid.UUID,
     payload: TransactionUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Transaction:
-    transaction = db.get(Transaction, transaction_id)
+    transaction = db.scalar(
+        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == current_user.id)
+    )
     if transaction is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
 
-    _validate_references(db, payload)
+    _validate_references(db, payload, current_user)
 
     transaction.client_id = payload.client_id
     transaction.service_id = payload.service_id
@@ -122,8 +142,14 @@ def update_transaction(
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_transaction(transaction_id: uuid.UUID, db: Session = Depends(get_db)) -> Response:
-    transaction = db.get(Transaction, transaction_id)
+def delete_transaction(
+    transaction_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    transaction = db.scalar(
+        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == current_user.id)
+    )
     if transaction is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
 
