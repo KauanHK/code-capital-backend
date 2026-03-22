@@ -8,6 +8,11 @@ services:
       - POSTGRES_DB=sw
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sw"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -27,19 +32,50 @@ services:
       - N8N_PROTOCOL=http
     volumes:
       - n8n_data:/home/node/.n8n
-  
+
+  evolution:
+    image: evoapicloud/evolution-api:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8181:8181"
+    environment:
+      - SERVER_URL=http://evolution:8181
+      - PROVIDER=evolution
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/evolution_db?schema=evolution_api
+      - DATABASE_LOGGING=false
+      - CORS_ORIGIN_URL=*
+      - ENCRYPTION_KEY=${EVOLUTION_ENCRYPTION_KEY:-evol_secret_key_12345}
+      - API_KEY_ACCESS_CONTROL=${EVOLUTION_API_KEY:-sk_evolution_default_key}
+      - LOG_LEVEL=info
+    volumes:
+      - evolution_data:/app/store
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build: .
     restart: always
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       - API_TITLE=${API_TITLE}
       - API_VERSION=${API_VERSION}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/sw
 
 volumes:
   postgres_data:
   n8n_data:
+  evolution_data:
+
+networks:
+  default:
+    name: sw_network

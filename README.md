@@ -6,6 +6,8 @@ API MVP com FastAPI para CRUD completo de:
 - client
 - transaction
 
+Inclui suporte para integração com Evolution API (WhatsApp Business).
+
 ## Requisitos
 - Python 3.11+
 - Docker e Docker Compose
@@ -85,3 +87,29 @@ uvicorn app.main:app --reload
 - Delecao bloqueada com dependencias para category, service e client (retorna 409).
 - transaction.client_id opcional.
 - Listagens retornam todos os registros (sem paginacao no MVP).
+
+## Evolution API (WhatsApp)
+
+Evolution API está disponível em `http://localhost:8181` quando executado com Docker Compose. Use a chave de API configurada em `.env` (variável `EVOLUTION_API_KEY`) para autenticar requisições.
+
+### Documentação
+- Dashboard: http://localhost:8181/api/docs
+- Documentação OpenAPI: http://localhost:8181/swagger
+
+### Customize chaves de segurança
+Edite o arquivo `.env` com valores próprios:
+```
+EVOLUTION_ENCRYPTION_KEY=sua_chave_de_encriptacao_forte
+EVOLUTION_API_KEY=sua_chave_api_forte
+```
+
+### Subir tudo com Evolution
+```bash
+docker compose up -d
+```
+
+Isso vai inicializar:
+- PostgreSQL (porta 5432)
+- API FastAPI (porta 8000)
+- Evolution API (porta 8181)
+- n8n (porta 5678)

@@ -1,6 +1,7 @@
 import uuid
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -52,8 +53,31 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
 
 
 @router.get("", response_model=list[TransactionRead])
-def list_transactions(db: Session = Depends(get_db)) -> list[Transaction]:
-    return db.scalars(select(Transaction).order_by(Transaction.created_at.desc())).all()
+def list_transactions(
+    status_filter: Literal["pending", "paid", "cancelled"] | None = Query(default=None, alias="status"),
+    is_expense: bool | None = None,
+    is_personal: bool | None = None,
+    pjpf: Literal["pj", "pf"] | None = None,
+    client_id: uuid.UUID | None = None,
+    service_id: uuid.UUID | None = None,
+    db: Session = Depends(get_db),
+) -> list[Transaction]:
+    query = select(Transaction)
+
+    if status_filter is not None:
+        query = query.where(Transaction.status == status_filter)
+    if is_expense is not None:
+        query = query.where(Transaction.is_expense == is_expense)
+    if is_personal is not None:
+        query = query.where(Transaction.is_personal == is_personal)
+    if pjpf is not None:
+        query = query.where(Transaction.pjpf == pjpf)
+    if client_id is not None:
+        query = query.where(Transaction.client_id == client_id)
+    if service_id is not None:
+        query = query.where(Transaction.service_id == service_id)
+
+    return db.scalars(query.order_by(Transaction.created_at.desc())).all()
 
 
 @router.get("/{transaction_id}", response_model=TransactionRead)
