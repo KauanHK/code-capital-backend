@@ -47,12 +47,12 @@ alembic upgrade head
 6. Inicie a API:
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8001
 ```
 
 ## Documentação
-- Swagger UI: http://localhost:8000/docs
-- OpenAPI: http://localhost:8000/openapi.json
+- Swagger UI: http://localhost:8001/docs
+- OpenAPI: http://localhost:8001/openapi.json
 
 ## Rotas CRUD
 ### Categories
@@ -110,6 +110,6 @@ docker compose up -d
 
 Isso vai inicializar:
 - PostgreSQL (porta 5432)
-- API FastAPI (porta 8000)
+- API FastAPI (porta 8001)
 - Evolution API (porta 8181)
 - n8n (porta 5678)
