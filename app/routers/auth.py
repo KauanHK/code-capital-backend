@@ -13,13 +13,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenRead, status_code=status.HTTP_201_CREATED)
 def register(payload: UserRegister, db: Session = Depends(get_db)) -> TokenRead:
-    user = User(username=payload.username, password_hash=hash_password(payload.password))
+    user = User(username=payload.username, number=payload.number, password_hash=hash_password(payload.password))
     db.add(user)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username or number already exists")
 
     db.refresh(user)
     return TokenRead(access_token=create_access_token(user.id))

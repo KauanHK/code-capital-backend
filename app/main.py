@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, categories, clients, services, transactions
+from app.routers import auth, categories, clients, services, transactions, users
 
 app = FastAPI(title=settings.API_TITLE, version=settings.API_VERSION)
 
@@ -24,3 +24,4 @@ app.include_router(services.router)
 app.include_router(clients.router)
 app.include_router(transactions.router)
 app.include_router(auth.router)
+app.include_router(users.router)

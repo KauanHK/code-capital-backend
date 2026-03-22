@@ -12,7 +12,7 @@ def _auth_headers() -> dict[str, str]:
     suffix = uuid.uuid4().hex[:8]
     response = client.post(
         "/auth/register",
-        json={"username": f"user_{suffix}", "password": "Password123!"},
+        json={"username": f"user_{suffix}", "number": f"num_{suffix}", "password": "Password123!"},
     )
     assert response.status_code == 201
     token = response.json()["access_token"]

@@ -18,6 +18,7 @@ class User(Base):
         server_default=text("gen_random_uuid()"),
     )
     username: Mapped[str] = mapped_column(String(150), unique=True, nullable=False)
+    number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 

@@ -10,9 +10,10 @@ client = TestClient(app)
 
 def test_register_returns_bearer_token() -> None:
     username = f"register_{uuid.uuid4().hex[:8]}"
+    number = f"num_{uuid.uuid4().hex[:8]}"
     response = client.post(
         "/auth/register",
-        json={"username": username, "password": "Password123!"},
+        json={"username": username, "number": number, "password": "Password123!"},
     )
 
     assert response.status_code == 201
@@ -24,9 +25,10 @@ def test_register_returns_bearer_token() -> None:
 
 def test_login_returns_token_for_valid_credentials() -> None:
     username = f"login_{uuid.uuid4().hex[:8]}"
+    number = f"num_{uuid.uuid4().hex[:8]}"
     register_response = client.post(
         "/auth/register",
-        json={"username": username, "password": "Password123!"},
+        json={"username": username, "number": number, "password": "Password123!"},
     )
     assert register_response.status_code == 201
 
@@ -43,9 +45,10 @@ def test_login_returns_token_for_valid_credentials() -> None:
 
 def test_login_rejects_invalid_password() -> None:
     username = f"invalid_{uuid.uuid4().hex[:8]}"
+    number = f"num_{uuid.uuid4().hex[:8]}"
     register_response = client.post(
         "/auth/register",
-        json={"username": username, "password": "Password123!"},
+        json={"username": username, "number": number, "password": "Password123!"},
     )
     assert register_response.status_code == 201
 

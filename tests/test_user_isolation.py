@@ -10,9 +10,10 @@ client = TestClient(app)
 
 def _register_and_get_headers() -> dict[str, str]:
     username = f"u_{uuid.uuid4().hex[:8]}"
+    number = f"num_{uuid.uuid4().hex[:8]}"
     response = client.post(
         "/auth/register",
-        json={"username": username, "password": "Password123!"},
+        json={"username": username, "number": number, "password": "Password123!"},
     )
     assert response.status_code == 201
     token = response.json()["access_token"]

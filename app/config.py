@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "change-me-in-production-change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    ADMIN_TOKEN: str = "admin-token-change-in-production"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
